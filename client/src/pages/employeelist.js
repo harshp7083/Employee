@@ -1,12 +1,14 @@
+
+
 import React, { useEffect, useState } from 'react';
-import { fetchEmployees, deleteEmployee } from '../services/employeeService';
-import { Table, Button } from 'react-bootstrap';
-import EditEmployeeModal from './EditEmployeeModal';
+import { Table, Button, Form, FormControl} from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import { fetchEmployees, deleteEmployee, searchEmployees } from '../services/employeeservice'; 
+import AddEmployee from '../components/addemployee'; 
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
-  const [editingEmployee, setEditingEmployee] = useState(null);
-
+  const [searchQuery, setSearchQuery] = useState('');
   useEffect(() => {
     const loadEmployees = async () => {
       const data = await fetchEmployees();
@@ -15,30 +17,37 @@ const EmployeeList = () => {
     loadEmployees();
   }, []);
 
-  const handleEdit = (employee) => {
-    setEditingEmployee(employee);
-  };
-
   const handleDelete = async (employeeId) => {
     await deleteEmployee(employeeId);
-    setEmployees(employees.filter(employee => employee._id !== employeeId));
+    setEmployees(employees.filter(emp => emp._id !== employeeId));
   };
 
-  const handleModalClose = () => {
-    setEditingEmployee(null);
-  };
-
-  const handleModalSave = (updatedEmployee) => {
-    setEmployees(employees.map(employee => (employee._id === updatedEmployee._id ? updatedEmployee : employee)));
-    setEditingEmployee(null);
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    const data = await searchEmployees(searchQuery);
+    setEmployees(data);
   };
 
   return (
     <div>
-      <h1>Employee List</h1>
+      <div className="mb-3 d-flex justify-content-between align-items-center">
+        <h1>Employee List</h1>
+        <Form inline onSubmit={handleSearch}>
+          <FormControl
+            type="text"
+            placeholder="Search by name or address"
+            className="mr-sm-2"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Button type="submit" variant="outline-success">Search</Button>
+        </Form>
+        <Link to="/employees/add" className="btn btn-primary">Add Employee</Link>
+      </div>
       <Table striped bordered hover>
         <thead>
           <tr>
+            <th>Sr. No.</th>
             <th>Name</th>
             <th>Email</th>
             <th>Phone</th>
@@ -47,28 +56,21 @@ const EmployeeList = () => {
           </tr>
         </thead>
         <tbody>
-          {employees.map(employee => (
+          {employees.map((employee, index) => (
             <tr key={employee._id}>
+              <td>{index + 1}</td>
               <td>{employee.name}</td>
               <td>{employee.email}</td>
               <td>{employee.phone}</td>
               <td>{employee.address}</td>
               <td>
-                <Button variant="warning" onClick={() => handleEdit(employee)}>Edit</Button>
+                <Link to={`/employees/${employee._id}`} className="btn btn-warning">Edit</Link>
                 <Button variant="danger" onClick={() => handleDelete(employee._id)}>Delete</Button>
               </td>
             </tr>
           ))}
         </tbody>
       </Table>
-      {editingEmployee && (
-        <EditEmployeeModal
-          show={!!editingEmployee}
-          employee={editingEmployee}
-          onHide={handleModalClose}
-          onSave={handleModalSave}
-        />
-      )}
     </div>
   );
 };
